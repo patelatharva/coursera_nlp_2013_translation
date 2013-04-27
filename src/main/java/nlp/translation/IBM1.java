@@ -57,6 +57,7 @@ public class IBM1 {
             frFr = new FileReader(frSenFileName);
             brFr = new BufferedReader(frFr);
             String enLine = brEn.readLine();
+            enLine = "NULL " + enLine;
             String frLine = brFr.readLine();
             while (enLine != null && frLine != null) {
                 String[] enWords = enLine.split(" ");
@@ -65,9 +66,7 @@ public class IBM1 {
                     for (String frWord : frWords) {
                         if (enForTMap.containsKey(enWord)) {
                             Map<String, Double> frEForTMap = enForTMap.get(enWord);
-
                             frEForTMap.put(frWord, 1.0);
-
                         } else {
                             Map<String, Double> frEForTMap = new HashMap<String, Double>();
                             frEForTMap.put(frWord, 1.0);
@@ -77,14 +76,15 @@ public class IBM1 {
                 }
 
                 enLine = brEn.readLine();
+                enLine = "NULL " + enLine;
                 frLine = brFr.readLine();
             }
             for (String enWord : enForTMap.keySet()) {
-                Map<String, Double> frEForTMap = enForTMap.get(enWord);
-                double nE = frEForTMap.keySet().size();
+                Map<String, Double> frEnT = enForTMap.get(enWord);
+                double nE = frEnT.keySet().size();
 
-                for (String frWord : frEForTMap.keySet()) {
-                    frEForTMap.put(frWord, 1.0 / nE);
+                for (String frWord : frEnT.keySet()) {
+                    frEnT.put(frWord, 1.0 / nE);
                 }
             }
 //            System.out.println(enForTMap);
@@ -113,73 +113,13 @@ public class IBM1 {
     }
 
     private void updateTParams() {
-        FileReader frEn = null;
-        FileReader frFr = null;
-        BufferedReader brEn = null;
-        BufferedReader brFr = null;
+
         int numOfIterations = 5;
         Map<String, Double> c;
         for (int i = 1; i <= 5; i++) {
             c = new HashMap<String, Double>();
-            try {
-                frFr = new FileReader(frSenFileName);
-                frEn = new FileReader(enSenFileName);
-                brEn = new BufferedReader(frEn);
-                brFr = new BufferedReader(frFr);
-
-                String enLine = brEn.readLine();
-                String frLine = brFr.readLine();
-                while (enLine != null && frLine != null) {
-                    String[] frWords = frLine.split(" ");
-                    String[] enWords = enLine.split(" ");
-                    for (String frWord : frWords) {
-                        double dDenom = 0.0;
-
-                        for (String enWord : enWords) {
-                            dDenom += enForTMap.get(enWord).get(frWord);
-                        }
-                        for (String enWord : enWords) {
-                            String enFr = enWord + "_" + frWord;
-                            double dNumerator = enForTMap.get(enWord).get(frWord);
-                            double d = dNumerator / dDenom;
-                            if (c.containsKey(enFr)) {
-                                c.put(enFr, c.get(enFr) + d);
-                            } else {
-                                c.put(enFr, d);
-                            }
-                            if (c.containsKey(enWord)) {
-                                c.put(enWord, c.get(enWord) + d);
-                            } else {
-                                c.put(enWord, d);
-                            }
-                            enForTMap.get(enWord).put(frWord, c.get(enFr) / c.get(enWord));
-                        }
-                    }
-
-                    enLine = brEn.readLine();
-                    frLine = brFr.readLine();
-                }
-
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
-            } finally {
-                if (brEn != null) {
-                    try {
-                        brEn.close();
-                    } catch (IOException ex) {
-                        Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-                if (brFr != null) {
-                    try {
-                        brFr.close();
-                    } catch (IOException ex) {
-                        Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
+            updateCounts(c);
+            updateT(c);
         }
         FileWriter fw = null;
         BufferedWriter bw = null;
@@ -213,6 +153,74 @@ public class IBM1 {
         }
     }
 
+    private void updateCounts(Map<String, Double> c) {
+        FileReader frEn = null;
+        FileReader frFr = null;
+        BufferedReader brEn = null;
+        BufferedReader brFr = null;
+        try {
+            frFr = new FileReader(frSenFileName);
+            frEn = new FileReader(enSenFileName);
+            brEn = new BufferedReader(frEn);
+            brFr = new BufferedReader(frFr);
+
+            String enLine = brEn.readLine();
+            enLine = "NULL " + enLine;
+            String frLine = brFr.readLine();
+            while (enLine != null && frLine != null) {
+                String[] frWords = frLine.split(" ");
+                String[] enWords = enLine.split(" ");
+                for (String frWord : frWords) {
+                    double dDenom = 0.0;
+
+                    for (String enWord : enWords) {
+                        dDenom += enForTMap.get(enWord).get(frWord);
+                    }
+                    for (String enWord : enWords) {
+                        String enFr = enWord + "_" + frWord;
+                        double dNumerator = enForTMap.get(enWord).get(frWord);
+                        double d = dNumerator / dDenom;
+                        if (c.containsKey(enFr)) {
+                            c.put(enFr, c.get(enFr) + d);
+                        } else {
+                            c.put(enFr, d);
+                        }
+                        if (c.containsKey(enWord)) {
+                            c.put(enWord, c.get(enWord) + d);
+                        } else {
+                            c.put(enWord, d);
+                        }
+//                            enForTMap.get(enWord).put(frWord, c.get(enFr) / c.get(enWord));
+                    }
+                }
+
+                enLine = brEn.readLine();
+                enLine = "NULL " + enLine;
+                frLine = brFr.readLine();
+            }
+
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (brEn != null) {
+                try {
+                    brEn.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            if (brFr != null) {
+                try {
+                    brFr.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+
     void alignTranslations() {
         readLearnedT();
         FileReader frEn = null;
@@ -229,7 +237,9 @@ public class IBM1 {
             fwAl = new FileWriter(alignmentsOutputFileName);
             bwAl = new BufferedWriter(fwAl);
             String enLine = brEn.readLine();
+            enLine = "NULL " + enLine;
             String frLine = brFr.readLine();
+
 
             int k = 0;
             while (enLine != null && frLine != null) {
@@ -247,19 +257,21 @@ public class IBM1 {
                         }
 
                     }
+                    if (maxJ != 0) {
+                        StringBuilder sb = new StringBuilder(new Integer(k).toString())
+                                .append(" ")
+                                .append(maxJ)
+                                .append(" ")
+                                .append(i + 1);
 
-                    StringBuilder sb = new StringBuilder(new Integer(k).toString())
-                            .append(" ")
-                            .append(maxJ + 1)
-                            .append(" ")
-                            .append(i + 1);
-
-                    bwAl.write(sb.toString());
-                    bwAl.newLine();
+                        bwAl.write(sb.toString());
+                        bwAl.newLine();
+                    }
                 }
 
 
                 enLine = brEn.readLine();
+                enLine = "NULL " + enLine;
                 frLine = brFr.readLine();
             }
         } catch (FileNotFoundException ex) {
@@ -325,6 +337,60 @@ public class IBM1 {
             if (brT != null) {
                 try {
                     brT.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+
+    private void updateT(Map<String, Double> c) {
+
+        FileReader frEn = null;
+        FileReader frFr = null;
+        BufferedReader brEn = null;
+        BufferedReader brFr = null;
+        try {
+            frFr = new FileReader(frSenFileName);
+            frEn = new FileReader(enSenFileName);
+            brEn = new BufferedReader(frEn);
+            brFr = new BufferedReader(frFr);
+
+            String enLine = brEn.readLine();
+            enLine = "NULL " + enLine;
+            String frLine = brFr.readLine();
+            while (enLine != null && frLine != null) {
+                String[] frWords = frLine.split(" ");
+                String[] enWords = enLine.split(" ");
+                for (String frWord : frWords) {
+
+
+                    for (String enWord : enWords) {
+                        String enFr = enWord + "_" + frWord;
+                        enForTMap.get(enWord).put(frWord, c.get(enFr) / c.get(enWord));
+                    }
+                }
+
+                enLine = brEn.readLine();
+                enLine = "NULL " + enLine;
+                frLine = brFr.readLine();
+            }
+
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            if (brEn != null) {
+                try {
+                    brEn.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            if (brFr != null) {
+                try {
+                    brFr.close();
                 } catch (IOException ex) {
                     Logger.getLogger(IBM1.class.getName()).log(Level.SEVERE, null, ex);
                 }
