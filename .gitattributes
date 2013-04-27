@@ -1,0 +1,19 @@
+#for all the files the default behaviour is to rely on gits auto binary detection mechanism
+* text=auto
+
+#the files which should be considered as text file and the line endings should be converted
+*.java text
+*.txt text
+*.xml text
+*.properties text
+*.patch
+
+#the files which must be considered as binary
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.class
+*.jar
+*.war
+
